@@ -70,3 +70,27 @@ class MeterViewSet(viewsets.ModelViewSet):
             {"message": f"Meter with device ID '{device_id}' was successfully deleted"},
             status=status.HTTP_200_OK
         )
+
+    def update(self, request, *args, **kwargs):
+        """
+        Update a specific meter by device_id
+        URL: PUT /api/meters/{device_id}/
+        Example: PUT /api/meters/METER001/
+        Body: {
+            "device_id": "METER001",
+            "location": "updated_location"
+        }
+
+        Also supports partial updates via PATCH
+        """
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(serializer.data)
+
+    def perform_update(self, serializer):
+        """Custom perform_update method"""
+        serializer.save()
