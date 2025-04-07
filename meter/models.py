@@ -1,4 +1,7 @@
 from django.db import models
+from django.core.exceptions import ValidationError
+from accounts.models import User
+
 
 # Create your models here.
 
@@ -13,3 +16,4 @@ class Meter(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
