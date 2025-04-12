@@ -92,3 +92,4 @@ class UserAssignmentViewSet(viewsets.ViewSet):
         return Response({
             'message': 'Assignment deleted successfully'
         }, status=status.HTTP_200_OK)
+

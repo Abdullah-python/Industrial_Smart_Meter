@@ -20,7 +20,6 @@ class JWTAuthMiddleware:
         self.protected_paths = [
             '/api/manager/',  # Protect the assignments endpoint
             '/api/engineer/',
-            '/api/admin/',
             '/api/assignments/',
             '/api/all-users/',
         ]

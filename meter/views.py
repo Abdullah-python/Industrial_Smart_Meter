@@ -3,8 +3,8 @@ from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
-from .models import Meter
-from .serializers import MeterSerializer
+from .models import Meter, MeterAssignment
+from .serializers import MeterSerializer, MeterAssignmentSerializer
 from accounts.models import  User
   # Add this import
 
@@ -50,4 +50,33 @@ class MeterViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         """Custom perform_update method"""
         serializer.save()
+
+
+class MeterAssignmentViewSet(viewsets.ViewSet):
+    def list(self, request):
+        try:
+            assignments = MeterAssignment.objects.all()
+            serializer = MeterAssignmentSerializer(assignments, many=True)
+            return Response({
+                "details": {
+                "message": "Meter assignments retrieved successfully",
+                "data": serializer.data
+            }}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def create(self, request):
+        try:
+            serializer = MeterAssignmentSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    "details": {
+                        "message": "Meter assignment created successfully",
+                        "data": serializer.data
+                    }
+                }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 

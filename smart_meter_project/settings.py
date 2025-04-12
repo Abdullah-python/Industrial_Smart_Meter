@@ -52,11 +52,12 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # CSRF middleware removed for API functionality
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'accounts.middleware.JWTAuthMiddleware',
+    'admin_master.middleware.AdminMiddleware',
 ]
 
 ROOT_URLCONF = 'smart_meter_project.urls'
