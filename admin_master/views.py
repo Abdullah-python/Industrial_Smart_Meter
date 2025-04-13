@@ -106,13 +106,17 @@ class ManagerViewSet(viewsets.ViewSet):
         manager = User.objects.get(id=pk, role='MANAGER')
         assignments = MeterAssignment.objects.filter(manager=manager)
         assignments_serializer = MeterAssignmentSerializer(assignments, many=True)
+        engineer_assignments = UserAssignment.objects.filter(manager=manager)
+        engineer_assignments_serializer = UserAssignmentSerializer(engineer_assignments, many=True)
+
         serializer = UserSerializer(manager)
         return Response({
             "details": {
                 "message": "Manager retrieved successfully",
                 "data": {
                     "manager": serializer.data,
-                    "assignments": assignments_serializer.data
+                    "assignments": assignments_serializer.data,
+                    "engineer_assignments": engineer_assignments_serializer.data
                 }
             }
         })

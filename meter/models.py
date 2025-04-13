@@ -43,6 +43,10 @@ class MeterAssignment(models.Model):
         if self.engineer and self.engineer.role != 'ENGINEER':
             errors['engineer'] = "Engineer must be a user with ENGINEER role"
 
+        # Check if meter is already assigned to this manager
+        if not self.pk and MeterAssignment.objects.filter(meter=self.meter, manager=self.manager, status=self.status).exists():
+            errors['manager'] = "This meter is already assigned to this manager with the same status"
+
         # Validate assignment flow
         if self.status == 'ENGINEER' and not self.engineer:
             errors.setdefault('engineer', []).append("Engineer must be assigned for ENGINEER status")

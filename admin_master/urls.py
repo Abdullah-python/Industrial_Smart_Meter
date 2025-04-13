@@ -11,5 +11,4 @@ router.register(r'engineers', views.EngineerViewSet, basename='engineers')
 urlpatterns = [
     path('', include(router.urls)),
     path('all-users/', views.UsersViewSet.as_view({'get': 'list'}), name='users'),
-
 ]
