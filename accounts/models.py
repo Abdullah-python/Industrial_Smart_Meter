@@ -21,6 +21,7 @@ class User(AbstractUser):
     date_joined = models.DateTimeField(auto_now_add=True)
     password = models.CharField(max_length=128, blank=True)
 
+
     class Meta:
         ordering = ['username']
 

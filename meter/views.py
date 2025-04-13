@@ -5,8 +5,8 @@ from rest_framework import status
 from rest_framework.decorators import action
 from .models import Meter, MeterAssignment
 from .serializers import MeterSerializer, MeterAssignmentSerializer
-from accounts.models import  User
-  # Add this import
+from accounts.models import User
+from django.core.exceptions import ValidationError
 
 class MeterViewSet(viewsets.ModelViewSet):
     """
@@ -54,29 +54,40 @@ class MeterViewSet(viewsets.ModelViewSet):
 
 class MeterAssignmentViewSet(viewsets.ViewSet):
     def list(self, request):
-        try:
-            assignments = MeterAssignment.objects.all()
-            serializer = MeterAssignmentSerializer(assignments, many=True)
-            return Response({
-                "details": {
+        assignments = MeterAssignment.objects.all()
+        serializer = MeterAssignmentSerializer(assignments, many=True)
+        return Response({
+            "details": {
                 "message": "Meter assignments retrieved successfully",
                 "data": serializer.data
-            }}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            }
+        }, status=status.HTTP_200_OK)
 
     def create(self, request):
-        try:
-            serializer = MeterAssignmentSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save()
+        serializer = MeterAssignmentSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                assignment = serializer.save()
                 return Response({
                     "details": {
                         "message": "Meter assignment created successfully",
-                        "data": serializer.data
+                        "data": MeterAssignmentSerializer(assignment).data
                     }
                 }, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except ValidationError as e:
+                return Response({
+                    "error": "Validation error",
+                    "details": e.message_dict if hasattr(e, 'message_dict') else {"detail": list(e)}
+                }, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                return Response({
+                    "error": "Error creating meter assignment",
+                    "details": str(e)
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response({
+                "error": "Validation failed",
+                "details": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 

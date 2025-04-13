@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from .models import UserAssignment
 from accounts.models import User
 from .serializers import UserAssignmentSerializer
+from meter.models import MeterAssignment
+from meter.serializers import MeterAssignmentSerializer
 from accounts.serializers import UserSerializer
 
 # Create your views here.
@@ -93,3 +95,32 @@ class UserAssignmentViewSet(viewsets.ViewSet):
             'message': 'Assignment deleted successfully'
         }, status=status.HTTP_200_OK)
 
+
+class ManagerViewSet(viewsets.ViewSet):
+    """ViewSet for listing all managers"""
+    def list(self, request):
+        managers = User.objects.filter(role='MANAGER')
+        serializer = UserSerializer(managers, many=True)
+        return Response(serializer.data)
+    def retrieve(self, request, pk=None):
+        manager = User.objects.get(id=pk, role='MANAGER')
+        assignments = MeterAssignment.objects.filter(manager=manager)
+        assignments_serializer = MeterAssignmentSerializer(assignments, many=True)
+        serializer = UserSerializer(manager)
+        return Response({
+            "details": {
+                "message": "Manager retrieved successfully",
+                "data": {
+                    "manager": serializer.data,
+                    "assignments": assignments_serializer.data
+                }
+            }
+        })
+
+
+class EngineerViewSet(viewsets.ViewSet):
+    """ViewSet for listing all engineers"""
+    def list(self, request):
+        engineers = User.objects.filter(role='ENGINEER')
+        serializer = UserSerializer(engineers, many=True)
+        return Response(serializer.data)

@@ -7,7 +7,7 @@ class UserAssignment(models.Model):
     """
     Relationship model to assign engineers to managers
     """
-    manager = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_engineers')
+    manager = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_engineers', )
     engineer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managers')
     assigned_at = models.DateTimeField(auto_now_add=True)
 
