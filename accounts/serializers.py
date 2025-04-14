@@ -1,8 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import User
-from meter.models import Meter
-from meter.serializers import MeterSerializer
+from meter.serializers import MeterAssignmentSerializer
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
@@ -46,5 +45,7 @@ class UserSerializer(serializers.ModelSerializer):
             role=validated_data['role']
         )
         return user
+
+
 
 

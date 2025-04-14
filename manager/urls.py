@@ -5,6 +5,8 @@ from . import views
 
 router = DefaultRouter()
 router.register(r'engineers', views.AssignedEngineerViewSet, basename='engineers')
+router.register(r'meters', views.AssignedMetersViewSet, basename='meters')
+router.register(r'assign-meter', views.AssignMeterToEngineerViewSet, basename='assign-meter')
 urlpatterns = [
     path('manager/', include(router.urls)),
 ]
