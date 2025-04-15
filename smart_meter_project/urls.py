@@ -23,5 +23,6 @@ urlpatterns = [
     path('api/admin/', include('meter.urls')),
     path('api/', include('accounts.urls')),
     path('api/admin/', include('admin_master.urls')),
-    path('api/', include('manager.urls'))
+    path('api/', include('manager.urls')),
+    path('api/', include('engineer.urls'))
 ]
