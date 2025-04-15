@@ -36,7 +36,12 @@ class JWTAuthMiddleware:
             # Extract token from Authorization header
             auth_header = request.META.get('HTTP_AUTHORIZATION', '')
             if not auth_header.startswith('Bearer '):
-                return JsonResponse({'error': 'Authorization header must start with Bearer'}, status=401)
+                return JsonResponse({
+                    "details": {
+                        "message": "Authorization header must start with Bearer",
+                        "data": None
+                    }
+                }, status=401)
 
             token = auth_header.split(' ')[1]
 
@@ -50,9 +55,26 @@ class JWTAuthMiddleware:
                 request.user = user
 
             except TokenError as e:
-                return JsonResponse({'error': str(e)}, status=401)
+                return JsonResponse({
+                    "details": {
+                        "message": "Invalid or expired token",
+                        "data": str(e)
+                    }
+                }, status=401)
             except User.DoesNotExist:
-                return JsonResponse({'error': 'User not found'}, status=401)
+                return JsonResponse({
+                    "details": {
+                        "message": "User not found",
+                        "data": None
+                    }
+                }, status=401)
+            except Exception as e:
+                return JsonResponse({
+                    "details": {
+                        "message": "Authentication error",
+                        "data": str(e)
+                    }
+                }, status=401)
 
         response = self.get_response(request)
         return response
