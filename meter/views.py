@@ -18,34 +18,73 @@ class MeterViewSet(viewsets.ModelViewSet):
     lookup_field = 'device_id'
 
     def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            return Response({
+                "details": {
+                    "message": "Meter retrieved successfully",
+                    "data": serializer.data
+                }
+            })
+        except Exception as e:
+            return Response({
+                "error": "Error retrieving meter",
+                "details": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def create(self, request, *args, **kwargs):
-        print("Received POST request:", request.data)
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        try:
+            print("Received POST request:", request.data)
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            return Response({
+                "details": {
+                    "message": "Meter created successfully",
+                    "data": serializer.data
+                }
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({
+                "error": "Error creating meter",
+                "details": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        device_id = instance.device_id
-        self.perform_destroy(instance)
-        return Response(
-            {"message": f"Meter with device ID '{device_id}' was successfully deleted"},
-            status=status.HTTP_200_OK
-        )
+        try:
+            instance = self.get_object()
+            device_id = instance.device_id
+            self.perform_destroy(instance)
+            return Response({
+                "details": {
+                    "message": f"Meter with device ID '{device_id}' was successfully deleted"
+                }
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                "error": "Error deleting meter",
+                "details": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        return Response(serializer.data)
+        try:
+            partial = kwargs.pop('partial', False)
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return Response({
+                "details": {
+                    "message": "Meter updated successfully",
+                    "data": serializer.data
+                }
+            })
+        except Exception as e:
+            return Response({
+                "error": "Error updating meter",
+                "details": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def perform_update(self, serializer):
         """Custom perform_update method"""
@@ -54,14 +93,20 @@ class MeterViewSet(viewsets.ModelViewSet):
 
 class MeterAssignmentViewSet(viewsets.ViewSet):
     def list(self, request):
-        assignments = MeterAssignment.objects.all()
-        serializer = MeterAssignmentSerializer(assignments, many=True)
-        return Response({
-            "details": {
-                "message": "Meter assignments retrieved successfully",
-                "data": serializer.data
-            }
-        }, status=status.HTTP_200_OK)
+        try:
+            assignments = MeterAssignment.objects.all()
+            serializer = MeterAssignmentSerializer(assignments, many=True)
+            return Response({
+                "details": {
+                    "message": "Meter assignments retrieved successfully",
+                    "data": serializer.data
+                }
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                "error": "Error retrieving meter assignments",
+                "details": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def create(self, request):
         serializer = MeterAssignmentSerializer(data=request.data)
@@ -90,4 +135,23 @@ class MeterAssignmentViewSet(viewsets.ViewSet):
                 "details": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
 
-
+    def destroy(self, request):
+        try:
+            assignment_id = request.data.get('id')
+            if not assignment_id:
+                return Response({
+                    "error": "Assignment ID is required"
+                }, status=status.HTTP_400_BAD_REQUEST)
+            assignment = MeterAssignment.objects.get(id=assignment_id)
+            assignment.delete()
+            return Response(
+                {
+                    "details": {
+                        "message": "Meter assignment deleted successfully"
+                    }
+                },status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                "error": "Error deleting meter assignment",
+                "details": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
