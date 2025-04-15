@@ -125,7 +125,7 @@ class UserAssignmentViewSet(viewsets.ViewSet):
             serializer = UserAssignmentSerializer(assignments, many=True)
             return Response({
                 "details": {
-                    "message": "Assignments retrieved successfully",
+                    "message": "Manager and Engineer assignments retrieved successfully",
                     "data": serializer.data
                 }
             }, status=status.HTTP_200_OK)
@@ -169,6 +169,7 @@ class UserAssignmentViewSet(viewsets.ViewSet):
                     "data": None
                 }
             }, status=status.HTTP_200_OK)
+
         except UserAssignment.DoesNotExist:
             return Response({
                 "details": {
