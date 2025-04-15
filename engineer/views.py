@@ -2,10 +2,10 @@ from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from meter.models import MeterAssignment
-from meter.serializers import MeterAssignmentSerializer
+from meter.serializers import MeterAssignmentSerializer, MeterSerializer
 from meter.models import Meter
 
-from django.contrib.auth.models import User
+from accounts.models import User
 # Create your views here.
 
 class EngineersMeterViewSet(viewsets.ViewSet):
@@ -14,6 +14,10 @@ class EngineersMeterViewSet(viewsets.ViewSet):
     def list(self, request):
         """List all meters assigned to the engineer"""
         try:
+          if not (request.user.role in ['ENGINEER'] or request.user.is_superuser):
+            return Response({
+                'message': 'Only ENGINEER can view assigned meters'
+            }, status=status.HTTP_403_FORBIDDEN)
           engineer = User.objects.get(id=request.user.id)
           meter_assignments = MeterAssignment.objects.filter(engineer=engineer)
           if not meter_assignments:
@@ -32,7 +36,8 @@ class EngineersMeterViewSet(viewsets.ViewSet):
 
           return Response({
               'message': 'Meters assigned to the engineer',
-              'meter_assignments': MeterAssignmentSerializer(meter_assignments, many=True).data
+              'meter_assignments': MeterAssignmentSerializer(meter_assignments, many=True).data,
+              'meters': MeterSerializer(meters, many=True).data
           }, status=status.HTTP_200_OK)
         except Exception as e:
           return Response({
