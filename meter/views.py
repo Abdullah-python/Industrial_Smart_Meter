@@ -135,9 +135,9 @@ class MeterAssignmentViewSet(viewsets.ViewSet):
                 "details": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
 
-    def destroy(self, request):
+    def destroy(self, request, pk):
         try:
-            assignment_id = request.data.get('id')
+            assignment_id = pk
             if not assignment_id:
                 return Response({
                     "error": "Assignment ID is required"
