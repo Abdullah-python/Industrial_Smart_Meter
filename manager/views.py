@@ -20,6 +20,7 @@ class AssignedEngineerViewSet(viewsets.ViewSet):
             return Response({
                 'message': 'Only MANAGER can view assigned engineers'
             }, status=status.HTTP_403_FORBIDDEN)
+
         engineers = UserAssignment.objects.filter(manager=request.user)
         engineer_manager_assignments = UserAssignmentSerializer(engineers, many=True)
 
@@ -27,10 +28,30 @@ class AssignedEngineerViewSet(viewsets.ViewSet):
         engineers = User.objects.filter(id__in=engineer_ids)
         engineer_serializer = UserSerializer(engineers, many=True)
 
-        return Response({
-            'engineer_manager_assignments': engineer_manager_assignments.data,
-            'engineers': engineer_serializer.data
-        })
+        # Get meters assigned to engineers and group them by engineer
+        engineer_meters = MeterAssignment.objects.filter(engineer__in=engineer_ids)
+        meter_serializer = MeterSerializer(
+            Meter.objects.filter(id__in=engineer_meters.values_list('meter_id', flat=True)),
+            many=True
+        )
+
+        # Create a dictionary to store meters for each engineer
+        engineer_meter_map = {}
+        for assignment in engineer_meters:
+            engineer_id = assignment.engineer_id
+            if engineer_id not in engineer_meter_map:
+                engineer_meter_map[engineer_id] = []
+            meter = Meter.objects.get(id=assignment.meter_id)
+            engineer_meter_map[engineer_id].append(MeterSerializer(meter).data)
+
+        # Add meters to each engineer's data
+        response_data = []
+        for engineer in engineer_serializer.data:
+            engineer_id = engineer['id']
+            engineer['meters'] = engineer_meter_map.get(engineer_id, [])
+            response_data.append(engineer)
+
+        return Response(response_data)
 
 
 class AssignedMetersViewSet(viewsets.ViewSet):
@@ -55,6 +76,7 @@ class AssignedMetersViewSet(viewsets.ViewSet):
         # Serialize both the assignments and meters
         assignment_serializer = MeterAssignmentSerializer(meter_assignments, many=True)
         meter_serializer = MeterSerializer(meters, many=True)
+
 
         return Response({
             'assignments': assignment_serializer.data,
@@ -93,7 +115,45 @@ class AssignMeterToEngineerViewSet(viewsets.ViewSet):
         meter_assignment.engineer = engineer
         meter_assignment.save()
 
-        return Response(MeterAssignmentSerializer(meter_assignment).data)
+        return Response({
+            'message': 'Meter assigned to engineer successfully',
+            'meter_assignment': MeterAssignmentSerializer(meter_assignment).data,
+            'meter': MeterSerializer(meter).data,
+            'engineer': UserSerializer(engineer).data
+        }, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        """Delete a meter from an engineer"""
+        if not (request.user.role in ['MANAGER'] or request.user.is_superuser):
+            return Response({
+                'message': 'Only MANAGER can delete meters from engineers'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        meter_id = request.data.get('meter_id')
+        engineer_id = request.data.get('engineer_id')
+
+        meter_assignment = MeterAssignment.objects.filter(meter_id=meter_id, manager=request.user).first()
+        if not meter_assignment:
+            return Response({
+                'message': 'Meter is not assigned to the user'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        engineer_assignment = UserAssignment.objects.filter(engineer_id=engineer_id, manager=request.user).first()
+        if not engineer_assignment:
+            return Response({
+                'message': 'Engineer is not assigned to the user'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        meter_assignment.engineer = None
+        meter_assignment.save()
+
+        return Response({
+            'message': 'Meter unassigned from engineer successfully',
+            'meter_assignment': MeterAssignmentSerializer(meter_assignment).data,
+            'meter': MeterSerializer(meter_assignment.meter).data,
+            'engineer': UserSerializer(meter_assignment.engineer).data
+        }, status=status.HTTP_200_OK)
+
 
 
 
