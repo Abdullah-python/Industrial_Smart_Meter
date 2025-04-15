@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from .models import UserAssignment
 from accounts.models import User
 from .serializers import UserAssignmentSerializer
-from meter.models import MeterAssignment
-from meter.serializers import MeterAssignmentSerializer
+from meter.models import MeterAssignment, Meter
+from meter.serializers import MeterAssignmentSerializer, MeterSerializer
 from accounts.serializers import UserSerializer
 
 # Create your views here.
@@ -109,14 +109,21 @@ class ManagerViewSet(viewsets.ViewSet):
         engineer_assignments = UserAssignment.objects.filter(manager=manager)
         engineer_assignments_serializer = UserAssignmentSerializer(engineer_assignments, many=True)
 
+        meters = Meter.objects.filter(id__in=assignments.values_list('meter', flat=True))
+        meters_serializer = MeterSerializer(meters, many=True)
+        engineers = User.objects.filter(id__in=engineer_assignments.values_list('engineer', flat=True))
+        engineers_serializer = UserSerializer(engineers, many=True)
+
         serializer = UserSerializer(manager)
         return Response({
             "details": {
                 "message": "Manager retrieved successfully",
                 "data": {
                     "manager": serializer.data,
-                    "assignments": assignments_serializer.data,
-                    "engineer_assignments": engineer_assignments_serializer.data
+                    "meter_assignments": assignments_serializer.data,
+                    "engineer_assignments": engineer_assignments_serializer.data,
+                    "meters": meters_serializer.data,
+                    "engineers": engineers_serializer.data
                 }
             }
         })
