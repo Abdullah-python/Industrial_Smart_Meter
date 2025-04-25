@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Meter, MeterAssignment
+from .models import Meter, MeterAssignment, MeterData
 from django.core.exceptions import ValidationError
 
 class MeterSerializer(serializers.ModelSerializer):
@@ -38,5 +38,19 @@ class MeterAssignmentSerializer(serializers.ModelSerializer):
         instance.clean()  # Call clean before saving
         instance.save()
         return instance
+
+class MeterDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MeterData
+        fields = [
+            'id', 'meter', 'timestamp', 'engine_hours', 'frequency_hz', 'power_percentage',
+            'phase_a_voltage_v', 'phase_a_current_a', 'phase_b_voltage_v', 'phase_b_current_a',
+            'phase_c_voltage_v', 'phase_c_current_a', 'coolant_temp_c', 'oil_pressure_kpa',
+            'battery_voltage_v', 'fuel_level_percent', 'rpm', 'oil_temp_c', 'boost_pressure_kpa',
+            'intake_air_temp_c', 'fuel_rate_lph', 'instantaneous_power_kw',
+            'alarm_emergency_stop', 'alarm_low_oil_pressure', 'alarm_high_coolant_temp',
+            'alarm_low_coolant_level', 'alarm_crank_failure'
+        ]
+        read_only_fields = ['timestamp']
 
 

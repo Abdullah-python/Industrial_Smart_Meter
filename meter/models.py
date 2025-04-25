@@ -6,6 +6,7 @@ from accounts.models import User
 # Create your models here.
 
 class Meter(models.Model):
+    id = models.AutoField(primary_key=True)
     device_id = models.CharField(max_length=100, unique=True)
     location = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -16,6 +17,9 @@ class Meter(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+
 
 
 class MeterAssignment(models.Model):
@@ -61,3 +65,57 @@ class MeterAssignment(models.Model):
 
     class Meta:
         ordering = ['-assigned_at']
+
+
+
+class MeterData(models.Model):
+    id = models.AutoField(primary_key=True)
+    meter = models.ForeignKey(Meter, on_delete=models.CASCADE, related_name='data_points')
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    # Basic meter data
+    engine_hours = models.FloatField()
+    frequency_hz = models.FloatField(help_text="Frequency of the generator in hertz")
+    power_percentage = models.IntegerField()
+
+    # Phase A data
+    phase_a_voltage_v = models.FloatField()
+    phase_a_current_a = models.FloatField()
+
+    # Phase B data
+    phase_b_voltage_v = models.FloatField()
+    phase_b_current_a = models.FloatField()
+
+    # Phase C data
+    phase_c_voltage_v = models.FloatField()
+    phase_c_current_a = models.FloatField()
+
+    # Temperature and pressure readings
+    coolant_temp_c = models.IntegerField(help_text="Coolant temperature in Celsius")
+    oil_pressure_kpa = models.IntegerField(help_text="Oil pressure in kilopascals")
+    battery_voltage_v = models.FloatField(help_text="Battery voltage in volts")
+    fuel_level_percent = models.IntegerField(help_text="Fuel level in percentage")
+    rpm = models.IntegerField(help_text="Engine RPM")
+    oil_temp_c = models.IntegerField(help_text="Oil temperature in Celsius")
+    boost_pressure_kpa = models.IntegerField(help_text="Boost pressure in kilopascals")
+    intake_air_temp_c = models.IntegerField(help_text="Intake air temperature in Celsius")
+    fuel_rate_lph = models.FloatField(help_text="Fuel rate in liters per hour")
+    instantaneous_power_kw = models.FloatField(help_text="Instantaneous power in kilowatts")
+
+    # Alarm states
+    alarm_emergency_stop = models.BooleanField(default=False)
+    alarm_low_oil_pressure = models.BooleanField(default=False)
+    alarm_high_coolant_temp = models.BooleanField(default=False)
+    alarm_low_coolant_level = models.BooleanField(default=False)
+    alarm_crank_failure = models.BooleanField(default=False)
+
+
+
+    def __str__(self):
+        return f"Data for {self.meter.device_id} at {self.timestamp}"
+
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = "Meter Data"
+        verbose_name_plural = "Meter Data"
+

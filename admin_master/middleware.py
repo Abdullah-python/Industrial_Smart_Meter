@@ -10,6 +10,7 @@ class AdminMiddleware:
         self.get_response = get_response
         # Define admin route prefixes that should be protected
         self.admin_prefixes = ['/admin/', '/api/admin/']  # Add more prefixes as needed
+
         self.jwt_authentication = JWTAuthentication()
 
     def __call__(self, request):

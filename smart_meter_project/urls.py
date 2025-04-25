@@ -15,14 +15,16 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/admin/', include('meter.urls')),
+    path('api/admin/', include('meter.urls')),  # Admin-only meter endpoints
+    path('api/meter/', include('meter.public_urls')),  # Public meter endpoints
     path('api/', include('accounts.urls')),
     path('api/admin/', include('admin_master.urls')),
     path('api/', include('manager.urls')),
     path('api/', include('engineer.urls'))
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
