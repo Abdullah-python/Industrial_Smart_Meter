@@ -44,12 +44,18 @@ class MeterDataSerializer(serializers.ModelSerializer):
         model = MeterData
         fields = [
             'id', 'meter', 'timestamp', 'engine_hours', 'frequency_hz', 'power_percentage',
-            'phase_a_voltage_v', 'phase_a_current_a', 'phase_b_voltage_v', 'phase_b_current_a',
-            'phase_c_voltage_v', 'phase_c_current_a', 'coolant_temp_c', 'oil_pressure_kpa',
-            'battery_voltage_v', 'fuel_level_percent', 'rpm', 'oil_temp_c', 'boost_pressure_kpa',
-            'intake_air_temp_c', 'fuel_rate_lph', 'instantaneous_power_kw',
-            'alarm_emergency_stop', 'alarm_low_oil_pressure', 'alarm_high_coolant_temp',
-            'alarm_low_coolant_level', 'alarm_crank_failure'
+            'avg_ll_volt', 'avg_ln_volt', 'avg_current',
+            'phase_a_voltage_v', 'phase_a_current_a', 'phase_a_voltage_ll', 'phase_a_frequency_hz',
+            'phase_a_real_power', 'phase_a_apparent_power', 'phase_a_reactive_power',
+            'phase_b_voltage_v', 'phase_b_current_a', 'phase_b_voltage_ll', 'phase_b_frequency_hz',
+            'phase_b_real_power', 'phase_b_apparent_power', 'phase_b_reactive_power',
+            'phase_c_voltage_v', 'phase_c_current_a', 'phase_c_voltage_ll', 'phase_c_frequency_hz',
+            'phase_c_real_power', 'phase_c_apparent_power', 'phase_c_reactive_power',
+            'gen_breaker', 'util_breaker', 'gc_status',
+            'coolant_temp_c', 'oil_pressure_kpa', 'battery_voltage_v', 'fuel_level_percent',
+            'rpm', 'oil_temp_c', 'boost_pressure_kpa', 'intake_air_temp_c', 'fuel_rate_lph',
+            'instantaneous_power_kw', 'alarm_emergency_stop', 'alarm_low_oil_pressure',
+            'alarm_high_coolant_temp', 'alarm_low_coolant_level', 'alarm_crank_failure'
         ]
         read_only_fields = ['timestamp']
 

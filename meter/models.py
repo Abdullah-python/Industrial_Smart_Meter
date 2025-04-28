@@ -78,17 +78,42 @@ class MeterData(models.Model):
     frequency_hz = models.FloatField(help_text="Frequency of the generator in hertz")
     power_percentage = models.IntegerField()
 
+    # Average readings
+    avg_ll_volt = models.FloatField(null=True, blank=True, help_text="Average line-to-line voltage")
+    avg_ln_volt = models.FloatField(null=True, blank=True, help_text="Average line-to-neutral voltage")
+    avg_current = models.FloatField(null=True, blank=True, help_text="Average current")
+
     # Phase A data
     phase_a_voltage_v = models.FloatField()
     phase_a_current_a = models.FloatField()
+    phase_a_voltage_ll = models.FloatField(null=True, blank=True, help_text="Phase A line-to-line voltage")
+    phase_a_frequency_hz = models.FloatField(null=True, blank=True, help_text="Phase A frequency")
+    phase_a_real_power = models.FloatField(null=True, blank=True, help_text="Phase A real power")
+    phase_a_apparent_power = models.FloatField(null=True, blank=True, help_text="Phase A apparent power")
+    phase_a_reactive_power = models.FloatField(null=True, blank=True, help_text="Phase A reactive power")
 
     # Phase B data
     phase_b_voltage_v = models.FloatField()
     phase_b_current_a = models.FloatField()
+    phase_b_voltage_ll = models.FloatField(null=True, blank=True, help_text="Phase B line-to-line voltage")
+    phase_b_frequency_hz = models.FloatField(null=True, blank=True, help_text="Phase B frequency")
+    phase_b_real_power = models.FloatField(null=True, blank=True, help_text="Phase B real power")
+    phase_b_apparent_power = models.FloatField(null=True, blank=True, help_text="Phase B apparent power")
+    phase_b_reactive_power = models.FloatField(null=True, blank=True, help_text="Phase B reactive power")
 
     # Phase C data
     phase_c_voltage_v = models.FloatField()
     phase_c_current_a = models.FloatField()
+    phase_c_voltage_ll = models.FloatField(null=True, blank=True, help_text="Phase C line-to-line voltage")
+    phase_c_frequency_hz = models.FloatField(null=True, blank=True, help_text="Phase C frequency")
+    phase_c_real_power = models.FloatField(null=True, blank=True, help_text="Phase C real power")
+    phase_c_apparent_power = models.FloatField(null=True, blank=True, help_text="Phase C apparent power")
+    phase_c_reactive_power = models.FloatField(null=True, blank=True, help_text="Phase C reactive power")
+
+    # Breaker statuses
+    gen_breaker = models.CharField(max_length=20, null=True, blank=True, help_text="Generator breaker status")
+    util_breaker = models.CharField(max_length=20, null=True, blank=True, help_text="Utility breaker status")
+    gc_status = models.CharField(max_length=20, null=True, blank=True, help_text="GC status")
 
     # Temperature and pressure readings
     coolant_temp_c = models.IntegerField(help_text="Coolant temperature in Celsius")

@@ -251,13 +251,42 @@ class MeterDataViewSet(viewsets.ViewSet):
                 'frequency_hz': data.get('frequency_hz', 0),
                 'power_percentage': data.get('power_percentage', 0),
 
-                # Phase data
+                # Average readings
+                'avg_ll_volt': data.get('avg_ll_volt', 0),
+                'avg_ln_volt': data.get('avg_ln_volt', 0),
+                'avg_current': data.get('avg_current', 0),
+
+                # Phase A data
                 'phase_a_voltage_v': data.get('phase_a', {}).get('voltage_v', 0),
                 'phase_a_current_a': data.get('phase_a', {}).get('current_a', 0),
+                'phase_a_voltage_ll': data.get('phase_a', {}).get('voltage_ll', 0),
+                'phase_a_frequency_hz': data.get('phase_a', {}).get('frequency_hz', 0),
+                'phase_a_real_power': data.get('phase_a', {}).get('real_power', 0),
+                'phase_a_apparent_power': data.get('phase_a', {}).get('apparent_power', 0),
+                'phase_a_reactive_power': data.get('phase_a', {}).get('reactive_power', 0),
+
+                # Phase B data
                 'phase_b_voltage_v': data.get('phase_b', {}).get('voltage_v', 0),
                 'phase_b_current_a': data.get('phase_b', {}).get('current_a', 0),
+                'phase_b_voltage_ll': data.get('phase_b', {}).get('voltage_ll', 0),
+                'phase_b_frequency_hz': data.get('phase_b', {}).get('frequency_hz', 0),
+                'phase_b_real_power': data.get('phase_b', {}).get('real_power', 0),
+                'phase_b_apparent_power': data.get('phase_b', {}).get('apparent_power', 0),
+                'phase_b_reactive_power': data.get('phase_b', {}).get('reactive_power', 0),
+
+                # Phase C data
                 'phase_c_voltage_v': data.get('phase_c', {}).get('voltage_v', 0),
                 'phase_c_current_a': data.get('phase_c', {}).get('current_a', 0),
+                'phase_c_voltage_ll': data.get('phase_c', {}).get('voltage_ll', 0),
+                'phase_c_frequency_hz': data.get('phase_c', {}).get('frequency_hz', 0),
+                'phase_c_real_power': data.get('phase_c', {}).get('real_power', 0),
+                'phase_c_apparent_power': data.get('phase_c', {}).get('apparent_power', 0),
+                'phase_c_reactive_power': data.get('phase_c', {}).get('reactive_power', 0),
+
+                # Breaker statuses
+                'gen_breaker': data.get('gen_breaker'),
+                'util_breaker': data.get('util_breaker'),
+                'gc_status': data.get('gc_status'),
 
                 # Other measurements
                 'coolant_temp_c': data.get('coolant_temp_c', 0),
@@ -365,42 +394,55 @@ class GenerateAlarmReport(viewsets.ViewSet):
                 }, status=status.HTTP_404_NOT_FOUND)
 
             # Create Excel file
-            excel_data = {
-                'timestamp': [],
-                'emergency_stop': [],
-                'low_oil_pressure': [],
-                'high_coolant_temp': [],
-                'low_coolant_level': [],
-                'crank_failure': [],
-                'coolant_temp_c': [],
-                'oil_pressure_kpa': [],
-                'engine_hours': [],
-                'fuel_level_percent': []
-            }
-
+            # First collect all timestamp values
+            timestamps = []
             for data in data_points:
                 # Convert timezone-aware datetime to timezone-naive datetime
                 naive_timestamp = data.timestamp.replace(tzinfo=None)
-                excel_data['timestamp'].append(naive_timestamp)
-                excel_data['emergency_stop'].append('Yes' if data.alarm_emergency_stop else 'No')
-                excel_data['low_oil_pressure'].append('Yes' if data.alarm_low_oil_pressure else 'No')
-                excel_data['high_coolant_temp'].append('Yes' if data.alarm_high_coolant_temp else 'No')
-                excel_data['low_coolant_level'].append('Yes' if data.alarm_low_coolant_level else 'No')
-                excel_data['crank_failure'].append('Yes' if data.alarm_crank_failure else 'No')
-                excel_data['coolant_temp_c'].append(data.coolant_temp_c)
-                excel_data['oil_pressure_kpa'].append(data.oil_pressure_kpa)
-                excel_data['engine_hours'].append(data.engine_hours)
-                excel_data['fuel_level_percent'].append(data.fuel_level_percent)
+                timestamps.append(naive_timestamp)
 
-            # Create DataFrame and excel file
-            df = pd.DataFrame(excel_data)
+            # Create a transposed DataFrame where metrics are rows and timestamps are columns
+            transposed_data = {
+                'Metric': [
+                    'Emergency Stop',
+                    'Low Oil Pressure',
+                    'High Coolant Temp',
+                    'Low Coolant Level',
+                    'Crank Failure',
+                    'Coolant Temp (°C)',
+                    'Oil Pressure (kPa)',
+                    'Engine Hours',
+                    'Fuel Level (%)'
+                ]
+            }
+
+            # Add a column for each timestamp with actual timestamp values as column headers
+            for i, timestamp in enumerate(timestamps):
+                data = data_points[i]
+                # Use the timestamp as the column header
+                formatted_timestamp = timestamp.strftime('%Y-%m-%d %H:%M:%S')
+                transposed_data[formatted_timestamp] = [
+                    'Yes' if data.alarm_emergency_stop else 'No',
+                    'Yes' if data.alarm_low_oil_pressure else 'No',
+                    'Yes' if data.alarm_high_coolant_temp else 'No',
+                    'Yes' if data.alarm_low_coolant_level else 'No',
+                    'Yes' if data.alarm_crank_failure else 'No',
+                    data.coolant_temp_c,
+                    data.oil_pressure_kpa,
+                    data.engine_hours,
+                    data.fuel_level_percent
+                ]
+
+            # Create DataFrame with transposed structure
+            df = pd.DataFrame(transposed_data)
+            df = df.set_index('Metric')  # Set metrics as index for better formatting
 
             # Create a buffer to save the Excel file
             buffer = BytesIO()
 
             # Create Excel writer
             with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-                df.to_excel(writer, sheet_name='Alarm Report', index=False)
+                df.to_excel(writer, sheet_name='Alarm Report')
                 workbook = writer.book
                 worksheet = writer.sheets['Alarm Report']
 
@@ -413,11 +455,23 @@ class GenerateAlarmReport(viewsets.ViewSet):
                     'border': 1
                 })
 
-                # Write the header with the header format
+                # Format the header row with the timestamp values
                 for col_num, value in enumerate(df.columns.values):
-                    worksheet.write(0, col_num, value, header_format)
-                    # Set column width based on content
-                    worksheet.set_column(col_num, col_num, 18)
+                    worksheet.write(0, col_num + 1, value, header_format)
+
+                # Format the metric names column
+                metric_format = workbook.add_format({
+                    'bold': True,
+                    'bg_color': '#E6E6E6',
+                    'border': 1
+                })
+
+                for row_num in range(df.shape[0]):
+                    worksheet.write(row_num + 1, 0, df.index[row_num], metric_format)
+
+                # Set column widths
+                worksheet.set_column(0, 0, 20)  # Metric names column
+                worksheet.set_column(1, df.shape[1], 25)  # Timestamp columns
 
             # Save the Excel file
             timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
@@ -450,7 +504,7 @@ class GenerateAlarmReport(viewsets.ViewSet):
 
     def retrieve(self, request, pk=None):
         """
-        Download a specific report by filename
+        Download a specific report by filename and delete it afterward
         """
         try:
             filename = pk
@@ -471,6 +525,9 @@ class GenerateAlarmReport(viewsets.ViewSet):
             )
             response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
+            # Delete the file after sending
+            default_storage.delete(file_path)
+
             return response
 
         except Exception as e:
@@ -490,6 +547,8 @@ class GenerateMeterReport(viewsets.ViewSet):
             meter_id = request.data.get('meter_id')
             time_range = request.data.get('time_range', 'last_24h')  # Options: last_24h, last_7d, etc.
 
+            print(f"Starting report generation for meter_id={meter_id}, time_range={time_range}")
+
             if not meter_id:
                 return Response({
                     "error": "meter_id is required"
@@ -498,13 +557,16 @@ class GenerateMeterReport(viewsets.ViewSet):
             # Get the meter
             try:
                 meter = Meter.objects.get(device_id=meter_id)
+                print(f"Found meter: {meter}")
             except Meter.DoesNotExist:
+                print(f"Meter not found: {meter_id}")
                 return Response({
                     "error": f"Meter with device_id {meter_id} not found"
                 }, status=status.HTTP_404_NOT_FOUND)
 
             # Query data based on time range
             query = MeterData.objects.filter(meter=meter).order_by('-timestamp')
+            print(f"Initial query created: {query.query}")
 
             if time_range == 'last_24h':
                 start_time = timezone.now() - timezone.timedelta(hours=24)
@@ -520,126 +582,226 @@ class GenerateMeterReport(viewsets.ViewSet):
                 pass
 
             data_points = list(query)
+            print(f"Retrieved {len(data_points)} data points")
 
             if not data_points:
+                print("No data found")
                 return Response({
                     "error": "No data found for this meter in the specified time range"
                 }, status=status.HTTP_404_NOT_FOUND)
 
-            # Create Excel file with all meter data fields
-            excel_data = {
-                'timestamp': [],
-                # Power metrics
-                'frequency_hz': [],
-                'power_percentage': [],
-                'instantaneous_power_kw': [],
-                # Engine metrics
-                'engine_hours': [],
-                'rpm': [],
-                # Phase data
-                'phase_a_voltage_v': [],
-                'phase_a_current_a': [],
-                'phase_b_voltage_v': [],
-                'phase_b_current_a': [],
-                'phase_c_voltage_v': [],
-                'phase_c_current_a': [],
-                # Temperature and pressure
-                'coolant_temp_c': [],
-                'oil_temp_c': [],
-                'intake_air_temp_c': [],
-                'oil_pressure_kpa': [],
-                'boost_pressure_kpa': [],
-                # Fuel metrics
-                'fuel_level_percent': [],
-                'fuel_rate_lph': [],
-                # Battery
-                'battery_voltage_v': [],
-                # Alarms
-                'alarm_emergency_stop': [],
-                'alarm_low_oil_pressure': [],
-                'alarm_high_coolant_temp': [],
-                'alarm_low_coolant_level': [],
-                'alarm_crank_failure': [],
-            }
+            # Create a buffer to save the Excel file
+            buffer = BytesIO()
+            print("Created BytesIO buffer")
 
+            # First collect all timestamp values
+            timestamps = []
             for data in data_points:
                 # Convert timezone-aware datetime to timezone-naive datetime
                 naive_timestamp = data.timestamp.replace(tzinfo=None)
-                excel_data['timestamp'].append(naive_timestamp)
+                timestamps.append(naive_timestamp)
 
-                # Power metrics
-                excel_data['frequency_hz'].append(data.frequency_hz)
-                excel_data['power_percentage'].append(data.power_percentage)
-                excel_data['instantaneous_power_kw'].append(data.instantaneous_power_kw)
+            # Create a transposed DataFrame where metrics are rows and timestamps are columns
+            transposed_data = {
+                'Metric': [
+                    # Basic meter data
+                    'Engine Hours',
+                    'Frequency (Hz)',
+                    'Power (%)',
 
-                # Engine metrics
-                excel_data['engine_hours'].append(data.engine_hours)
-                excel_data['rpm'].append(data.rpm)
+                    # Average readings
+                    'Avg Line-to-Line Voltage',
+                    'Avg Line-to-Neutral Voltage',
+                    'Avg Current',
 
-                # Phase data
-                excel_data['phase_a_voltage_v'].append(data.phase_a_voltage_v)
-                excel_data['phase_a_current_a'].append(data.phase_a_current_a)
-                excel_data['phase_b_voltage_v'].append(data.phase_b_voltage_v)
-                excel_data['phase_b_current_a'].append(data.phase_b_current_a)
-                excel_data['phase_c_voltage_v'].append(data.phase_c_voltage_v)
-                excel_data['phase_c_current_a'].append(data.phase_c_current_a)
+                    # Phase A data
+                    'Phase A Voltage (V)',
+                    'Phase A Current (A)',
+                    'Phase A Voltage Line-to-Line',
+                    'Phase A Frequency (Hz)',
+                    'Phase A Real Power',
+                    'Phase A Apparent Power',
+                    'Phase A Reactive Power',
 
-                # Temperature and pressure
-                excel_data['coolant_temp_c'].append(data.coolant_temp_c)
-                excel_data['oil_temp_c'].append(data.oil_temp_c)
-                excel_data['intake_air_temp_c'].append(data.intake_air_temp_c)
-                excel_data['oil_pressure_kpa'].append(data.oil_pressure_kpa)
-                excel_data['boost_pressure_kpa'].append(data.boost_pressure_kpa)
+                    # Phase B data
+                    'Phase B Voltage (V)',
+                    'Phase B Current (A)',
+                    'Phase B Voltage Line-to-Line',
+                    'Phase B Frequency (Hz)',
+                    'Phase B Real Power',
+                    'Phase B Apparent Power',
+                    'Phase B Reactive Power',
 
-                # Fuel metrics
-                excel_data['fuel_level_percent'].append(data.fuel_level_percent)
-                excel_data['fuel_rate_lph'].append(data.fuel_rate_lph)
+                    # Phase C data
+                    'Phase C Voltage (V)',
+                    'Phase C Current (A)',
+                    'Phase C Voltage Line-to-Line',
+                    'Phase C Frequency (Hz)',
+                    'Phase C Real Power',
+                    'Phase C Apparent Power',
+                    'Phase C Reactive Power',
 
-                # Battery
-                excel_data['battery_voltage_v'].append(data.battery_voltage_v)
+                    # Breaker statuses
+                    'Generator Breaker',
+                    'Utility Breaker',
+                    'GC Status',
 
-                # Alarms
-                excel_data['alarm_emergency_stop'].append('Yes' if data.alarm_emergency_stop else 'No')
-                excel_data['alarm_low_oil_pressure'].append('Yes' if data.alarm_low_oil_pressure else 'No')
-                excel_data['alarm_high_coolant_temp'].append('Yes' if data.alarm_high_coolant_temp else 'No')
-                excel_data['alarm_low_coolant_level'].append('Yes' if data.alarm_low_coolant_level else 'No')
-                excel_data['alarm_crank_failure'].append('Yes' if data.alarm_crank_failure else 'No')
+                    # Temperature and pressure
+                    'Coolant Temp (°C)',
+                    'Oil Temp (°C)',
+                    'Intake Air Temp (°C)',
+                    'Oil Pressure (kPa)',
+                    'Boost Pressure (kPa)',
 
-            # Create DataFrame and excel file
-            df = pd.DataFrame(excel_data)
+                    # Fuel metrics
+                    'Fuel Level (%)',
+                    'Fuel Rate (L/h)',
 
-            # Create a buffer to save the Excel file
-            buffer = BytesIO()
+                    # Others
+                    'RPM',
+                    'Battery Voltage (V)',
+                    'Instantaneous Power (kW)',
 
-            # Create Excel writer
-            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-                df.to_excel(writer, sheet_name='Meter Data Report', index=False)
-                workbook = writer.book
-                worksheet = writer.sheets['Meter Data Report']
+                    # Alarms
+                    'Emergency Stop',
+                    'Low Oil Pressure',
+                    'High Coolant Temp',
+                    'Low Coolant Level',
+                    'Crank Failure',
+                ]
+            }
 
-                # Add some formatting
-                header_format = workbook.add_format({
-                    'bold': True,
-                    'text_wrap': True,
-                    'valign': 'top',
-                    'bg_color': '#D7E4BC',
-                    'border': 1
-                })
+            # Add a column for each timestamp with actual timestamp values as column headers
+            for i, timestamp in enumerate(timestamps):
+                data = data_points[i]
+                # Use the timestamp as the column header
+                formatted_timestamp = timestamp.strftime('%Y-%m-%d %H:%M:%S')
+                transposed_data[formatted_timestamp] = [
+                    # Basic meter data
+                    data.engine_hours,
+                    data.frequency_hz,
+                    data.power_percentage,
 
-                # Format for numeric columns
-                number_format = workbook.add_format({'num_format': '#,##0.00'})
+                    # Average readings
+                    data.avg_ll_volt,
+                    data.avg_ln_volt,
+                    data.avg_current,
 
-                # Write the header with the header format
-                for col_num, value in enumerate(df.columns.values):
-                    worksheet.write(0, col_num, value, header_format)
-                    # Set column width based on content
-                    worksheet.set_column(col_num, col_num, 18)
+                    # Phase A data
+                    data.phase_a_voltage_v,
+                    data.phase_a_current_a,
+                    data.phase_a_voltage_ll,
+                    data.phase_a_frequency_hz,
+                    data.phase_a_real_power,
+                    data.phase_a_apparent_power,
+                    data.phase_a_reactive_power,
 
-                # Apply number formatting to numeric columns
-                for col_num, column in enumerate(df.columns):
-                    if column not in ['timestamp', 'alarm_emergency_stop', 'alarm_low_oil_pressure',
-                                     'alarm_high_coolant_temp', 'alarm_low_coolant_level', 'alarm_crank_failure']:
-                        worksheet.set_column(col_num, col_num, 18, number_format)
+                    # Phase B data
+                    data.phase_b_voltage_v,
+                    data.phase_b_current_a,
+                    data.phase_b_voltage_ll,
+                    data.phase_b_frequency_hz,
+                    data.phase_b_real_power,
+                    data.phase_b_apparent_power,
+                    data.phase_b_reactive_power,
+
+                    # Phase C data
+                    data.phase_c_voltage_v,
+                    data.phase_c_current_a,
+                    data.phase_c_voltage_ll,
+                    data.phase_c_frequency_hz,
+                    data.phase_c_real_power,
+                    data.phase_c_apparent_power,
+                    data.phase_c_reactive_power,
+
+                    # Breaker statuses
+                    data.gen_breaker,
+                    data.util_breaker,
+                    data.gc_status,
+
+                    # Temperature and pressure
+                    data.coolant_temp_c,
+                    data.oil_temp_c,
+                    data.intake_air_temp_c,
+                    data.oil_pressure_kpa,
+                    data.boost_pressure_kpa,
+
+                    # Fuel metrics
+                    data.fuel_level_percent,
+                    data.fuel_rate_lph,
+
+                    # Others
+                    data.rpm,
+                    data.battery_voltage_v,
+                    data.instantaneous_power_kw,
+
+                    # Alarms
+                    'Yes' if data.alarm_emergency_stop else 'No',
+                    'Yes' if data.alarm_low_oil_pressure else 'No',
+                    'Yes' if data.alarm_high_coolant_temp else 'No',
+                    'Yes' if data.alarm_low_coolant_level else 'No',
+                    'Yes' if data.alarm_crank_failure else 'No',
+                ]
+
+            # Create DataFrame with transposed structure
+            df = pd.DataFrame(transposed_data)
+            df = df.set_index('Metric')  # Set metrics as index for better formatting
+
+            try:
+                # Create Excel writer
+                with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                    print("Created Excel writer")
+                    df.to_excel(writer, sheet_name='Meter Data Report')
+                    print("Wrote DataFrame to Excel")
+
+                    workbook = writer.book
+                    worksheet = writer.sheets['Meter Data Report']
+
+                    # Add some formatting
+                    header_format = workbook.add_format({
+                        'bold': True,
+                        'text_wrap': True,
+                        'valign': 'top',
+                        'bg_color': '#D7E4BC',
+                        'border': 1
+                    })
+
+                    # Format the header row
+                    for col_num, value in enumerate(df.columns.values):
+                        worksheet.write(0, col_num + 1, value, header_format)
+
+                    # Format the metric names column
+                    metric_format = workbook.add_format({
+                        'bold': True,
+                        'bg_color': '#E6E6E6',
+                        'border': 1
+                    })
+
+                    for row_num in range(df.shape[0]):
+                        worksheet.write(row_num + 1, 0, df.index[row_num], metric_format)
+
+                    # Autofit columns
+                    worksheet.set_column(0, 0, 20)  # Metric names column
+                    worksheet.set_column(1, df.shape[1], 25)  # Timestamp columns
+
+                    # Add a timestamp legend at the bottom
+                    info_format = workbook.add_format({
+                        'bold': True,
+                        'font_size': 12,
+                        'font_color': 'blue'
+                    })
+                    # Use a naive timestamp for the report generation time
+                    naive_now = timezone.now().replace(tzinfo=None)
+                    worksheet.write(df.shape[0] + 3, 0, "Report Generated At:", info_format)
+                    worksheet.write(df.shape[0] + 3, 1, naive_now.strftime('%Y-%m-%d %H:%M:%S'))
+
+                print("Excel writing completed")
+            except Exception as excel_error:
+                print(f"Error during Excel writing: {excel_error}")
+                return Response({
+                    "error": "Error generating Excel file",
+                    "details": str(excel_error)
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # Save the Excel file
             timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
@@ -648,12 +810,22 @@ class GenerateMeterReport(viewsets.ViewSet):
 
             # Reset buffer position
             buffer.seek(0)
+            print(f"Buffer reset, size: {len(buffer.getvalue())} bytes")
 
             # Save to storage
-            default_storage.save(file_path, ContentFile(buffer.getvalue()))
+            try:
+                default_storage.save(file_path, ContentFile(buffer.getvalue()))
+                print(f"Saved file to {file_path}")
+            except Exception as storage_error:
+                print(f"Error saving to storage: {storage_error}")
+                return Response({
+                    "error": "Error saving Excel file to storage",
+                    "details": str(storage_error)
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # Generate download URL
             download_url = request.build_absolute_uri(f'/media/{file_path}')
+            print(f"Generated download URL: {download_url}")
 
             return Response({
                 "details": {
@@ -664,7 +836,46 @@ class GenerateMeterReport(viewsets.ViewSet):
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
+            print(f"Error in report generation: {str(e)}")
+            import traceback
+            traceback_str = traceback.format_exc()
+            print(f"Traceback: {traceback_str}")
+
             return Response({
                 "error": "Error generating meter data report",
+                "details": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def retrieve(self, request, pk=None):
+        """
+        Download a specific meter report by filename and delete it afterward
+        """
+        try:
+            filename = pk
+            file_path = f"reports/{filename}"
+
+            if not default_storage.exists(file_path):
+                return Response({
+                    "error": "Report file not found"
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            # Read the file
+            file_content = default_storage.open(file_path).read()
+
+            # Create HTTP response with file
+            response = HttpResponse(
+                file_content,
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+            # Delete the file after sending
+            default_storage.delete(file_path)
+
+            return response
+
+        except Exception as e:
+            return Response({
+                "error": "Error downloading report",
                 "details": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
